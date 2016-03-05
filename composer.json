@@ -14,5 +14,10 @@
             "name": "PaulJulio",
             "email": "paulhulett@gmail.com"
         }
-    ]
+    ],
+    "autoload": {
+        "psr-4": {
+            "PaulJulio\\PhpOnLambda\\": "src"
+        }
+    }
 }
