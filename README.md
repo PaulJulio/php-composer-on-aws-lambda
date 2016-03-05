@@ -2,11 +2,11 @@
 Let's hit those 5 W's
 
 ## Who
-Paul Hulett <paulhulett@gmail.com>
-https://github.com/PaulJulio
-https://linkedin.com/in/paulhulett
-https://twitter.com/paulhulett
-https://facebook.com/paulhulett
+- Paul Hulett <paulhulett@gmail.com>
+- https://github.com/PaulJulio
+- https://linkedin.com/in/paulhulett
+- https://twitter.com/paulhulett
+- https://facebook.com/paulhulett
 
 ## Where
 https://github.com/PaulJulio/php-composer-on-aws-lambda
