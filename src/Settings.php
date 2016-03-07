@@ -15,6 +15,7 @@ namespace PaulJulio\PhpOnLambda;
  * @property string machinetype
  * @property string timezone
  * @property string repo
+ * @property string publicdns
  * @property bool pemrelative
  * @property bool createsecgrp
  *
@@ -55,5 +56,9 @@ class Settings extends \PaulJulio\SettingsIni\Settings{
             'KeyName' => $this->pemname,
             'SecurityGroups' => [$this->secgrp],
         ];
+    }
+
+    public function setPublicDns($address) {
+        $this->publicdns = $address;
     }
 }

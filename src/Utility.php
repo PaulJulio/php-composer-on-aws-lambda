@@ -1,104 +1,240 @@
 <?php
 namespace PaulJulio\PhpOnLambda;
-// this is all generally horrible and is just for getting set up
-// ToDo: make not horrible
-set_time_limit(0);
-$autoload = implode(DIRECTORY_SEPARATOR, [__DIR__, '..', 'vendor', 'autoload.php']);
-require_once(realpath($autoload));
-$settings = implode(DIRECTORY_SEPARATOR, [__DIR__, 'Settings.php']);
-require_once(realpath($settings));
+use \Exception;
 
+class Utility {
 
-$settingsSO = new \PaulJulio\SettingsIni\SettingsSO();
-$settingsSO->addIniFileNamesFromPath(__DIR__);
+    const SSH_DELAY = 40;
+    const SSH_RETRIES = 5;
+    const SSH_RETRY_DELAY = 10;
+    const SSH_READ_TIMEOUT = 2;
 
-$settings = \PaulJulio\PhpOnLambda\Settings::Factory($settingsSO);
+    /* @var \PaulJulio\PhpOnLambda\UtilitySO */
+    private $so;
+    /* @var \Aws\Sdk */
+    private $sdk;
 
-date_default_timezone_set($settings->timezone);
-// https://blogs.aws.amazon.com/php/post/TxMLFLE50WUAMR/Provision-an-Amazon-EC2-Instance-with-PHP
-$sdk = new \Aws\Sdk($settings->getAwsConfig());
-$ec2 = $sdk->createEc2();
-try {
-    $response = $ec2->deleteKeyPair(['KeyName' => $settings->pemname]);
-} catch (\Exception $e) {
-    // if it doesn't exist, that's fine
-}
-$response = $ec2->createKeyPair(['KeyName'=>$settings->pemname]);
-$pem = $response->get('KeyMaterial');
-$pempath = $settings->getPemPath();
-$pemfile = fopen($pempath, 'w');
-fwrite($pemfile, $pem);
-fclose($pemfile);
-chmod($pempath, 0600);
+    private function __construct(){}
 
-if ($settings->createsecgrp) {
-    try {
-        $response = $ec2->deleteSecurityGroup(['GroupName' => $settings->secgrp]);
-    } catch (\Exception $e) {
-        // if it doesn't exist, that's fine
+    public static function Factory(UtilitySO $so) {
+        if (!$so->isValid()) {
+            throw new Exception('Invalid settings object');
+        }
+        $instance = new static;
+        $instance->so = $so;
+        $instance->sdk = new \Aws\Sdk($so->getSettings()->getAwsConfig());
+        return $instance;
     }
-    try {
-        $response = $ec2->createSecurityGroup(['GroupName' => $settings->secgrp, 'Description' => 'ssh access']);
-        $response = $ec2->authorizeSecurityGroupIngress([
-            'GroupName' => $settings->secgrp,
-            'IpProtocol' => 'tcp',
-            'FromPort' => 22,
-            'ToPort' => 22,
-            'CidrIp' => '0.0.0.0/0',
-        ]);
-    } catch (\Exception $e) {
-        // if another instance is running with the security group, we can neither delete not create it
+
+    /**
+     * @param bool $suppressException
+     * @return \Aws\Result|null
+     * @throws Exception
+     */
+    public function deleteKeyPair($suppressException = true) {
+        $result = null;
+        $ec2 = $this->sdk->createEc2();
+        try {
+            $result = $ec2->deleteKeyPair(['KeyName' => $this->so->getSettings()->pemname]);
+        } catch (Exception $e) {
+            if (!$suppressException) {
+                throw $e;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * @param bool $suppressException
+     * @return \Aws\Result|null
+     * @throws Exception
+     */
+    public function createKeyPair($suppressException = true) {
+        $result = null;
+        $ec2 = $this->sdk->createEc2();
+        try {
+            $result = $ec2->createKeyPair(['KeyName' => $this->so->getSettings()->pemname]);
+            $pem = $result->get('KeyMaterial');
+            $pempath = $this->so->getSettings()->getPemPath();
+            $pemfile = fopen($pempath, 'w');
+            fwrite($pemfile, $pem);
+            fclose($pemfile);
+            chmod($pempath, 0600);
+        } catch (Exception $e) {
+            if (!$suppressException) {
+                throw $e;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * @param bool $suppressException
+     * @return \Aws\Result|null
+     * @throws Exception
+     */
+    public function deleteSecurityGroup($suppressException = true) {
+        $result = null;
+        $ec2 = $this->sdk->createEc2();
+        try {
+            $result = $ec2->deleteSecurityGroup(['GroupName' => $this->so->getSettings()->secgrp]);
+        } catch (Exception $e) {
+            if (!$suppressException) {
+                throw $e;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * @param bool $suppressException
+     * @return \Aws\Result|null
+     * @throws Exception
+     */
+    public function createSecurityGroup($suppressException = true) {
+        $result = null;
+        $ec2 = $this->sdk->createEc2();
+        try {
+            $ec2->createSecurityGroup([
+                'GroupName' => $this->so->getSettings()->secgrp,
+                'Description' => 'ssh access'
+            ]);
+            $result = $ec2->authorizeSecurityGroupIngress([
+                'GroupName' => $this->so->getSettings()->secgrp,
+                'IpProtocol' => 'tcp',
+                'FromPort' => 22,
+                'ToPort' => 22,
+                'CidrIp' => '0.0.0.0/0',
+            ]);
+        } catch (Exception $e) {
+            if (!$suppressException) {
+                throw $e;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * @return \phpseclib\Crypt\RSA
+     */
+    public function getKey($renew = false) {
+        static $key = null;
+        if ($renew || !isset($key)) {
+            $key = new \phpseclib\Crypt\RSA();
+            $key->loadKey(file_get_contents($this->so->getSettings()->getPemPath()), \phpseclib\Crypt\RSA::PUBLIC_FORMAT_PKCS1);
+        }
+        return $key;
+    }
+
+    public function getSSH($address) {
+        $ssh = new \phpseclib\Net\SSH2($address);
+        $result = $ssh->login('ec2-user', $this->getKey());
+        if (!$result) {
+            throw new Exception('Unable to establish ssh session');
+        }
+        return $ssh;
+    }
+
+    /**
+     * @param bool $suppressException
+     * @param bool $silent
+     * @return bool true if able to establish an ssh connection
+     * @throws Exception
+     */
+    public function runInstance($suppressException = true, $silent = false) {
+        $result = null;
+        $ec2 = $this->sdk->createEc2();
+        try {
+            $result = $ec2->runInstances($this->so->getSettings()->getProvisionConfig());
+            $instances = $result->get('Instances');
+            $instanceId = $instances[0]['InstanceId'];
+            if (!$silent) {
+                echo "Waiting for Instance to Become Available" . PHP_EOL;
+            }
+            $ec2->waitUntil('InstanceRunning', ['InstanceIds' => [$instanceId]]);
+            $result = $ec2->describeInstances(['InstanceIds' => [$instanceId]]);
+            $reservations = $result->get('Reservations');
+            $address = $reservations[0]['Instances'][0]['PublicDnsName'];
+            // record the address
+            $fh = fopen('machine.ini', 'w');
+            fwrite($fh, '[machine]');
+            fwrite($fh, 'publicdns = ' . $address);
+            fclose($fh);
+            // set the address in the settings as if it had been read from that ini file
+            $this->so->getSettings()->setPublicDns($address);
+            if (!$silent) {
+                echo "Watiing for the subnet to become available" . PHP_EOL;
+            }
+            $ec2->waitUntil('SubnetAvailable', ['InstanceIds' => [$instanceId]]);
+            if (!$silent) {
+                echo(sprintf('Waiting %s seconds for ssh to come online' . PHP_EOL, self::SSH_DELAY));
+            }
+            for ($i = 0; $i < 40; $i++) {
+                sleep (1);
+                if (!$silent) {
+                    if ($i > 0 && $i % 10 == 0) {
+                        echo '+';
+                    } else {
+                        echo '.';
+                    }
+                }
+            }
+            $result = null;
+            $retries = self::SSH_RETRIES;
+            while (!$result && $retries-- > 0) {
+                if (isset($result)) {
+                    sleep(self::SSH_RETRY_DELAY);
+                }
+                if (!$silent) {
+                    echo "Attempting connection to $address " . PHP_EOL;
+                }
+                try {
+                    $ssh = $this->getSSH($address);
+                    if (!$silent) {
+                        echo "Connection successful" . PHP_EOL;
+                    }
+                    $ssh->disconnect();
+                    $result = true;
+                } catch (Exception $e) {
+                    $result = false;
+                }
+            }
+        } catch (Exception $e) {
+            if (!$suppressException) {
+                throw $e;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * @param bool $silent
+     * @throws Exception
+     */
+    public function remoteInstallGit($silent = false) {
+        $ansi = new \phpseclib\File\ANSI();
+        $ssh = $this->getSSH($this->so->getSettings()->publicdns);
+        $ssh->setTimeout(self::SSH_READ_TIMEOUT);
+        $ansi->appendString($ssh->read());
+        $ssh->write("sudo su \n");
+        $ansi->appendString($ssh->read());
+        $ssh->write("yum install git -y \n");
+        $ansi->appendString($ssh->read());
+        $ssh->write("exit \n");
+        $ansi->appendString($ssh->read());
+        if (!$silent) {}
+        echo $ansi->getScreen();
+    }
+
+    /**
+     * @param bool $silent
+     * @throws Exception
+     */
+    public function remoteCloneRepo($silent = false) {
+        $ssh = $this->getSSH($this->so->getSettings()->publicdns);
+        $output = $ssh->exec('git clone ' . $this->so->getSettings()->repo . ' phponlambda');
+        if (!$silent) {
+            echo $output;
+        }
     }
 }
-
-$response = $ec2->runInstances($settings->getProvisionConfig());
-$instances = $response->get('Instances');
-$instanceId = $instances[0]['InstanceId'];
-
-echo "Waiting for the instance to become available" . PHP_EOL;
-$ec2->waitUntil('InstanceRunning', ['InstanceIds'=>[$instanceId]]);
-
-$response = $ec2->describeInstances(['InstanceIds'=>[$instanceId]]);
-$reservations = $response->get('Reservations');
-$address = $reservations[0]['Instances'][0]['PublicDnsName'];
-echo $address  . ' is coming online ' . PHP_EOL;
-
-echo "Waiting for the subnet to become available" . PHP_EOL;
-$ec2->waitUntil('SubnetAvailable', ['InstanceIds'=>[$instanceId]]);
-
-// magic numbers
-echo "Wait 40 seconds for ssh to come online";
-for ($i = 0; $i <= 40; ++$i) {
-    sleep(1);
-    if ($i % 10 == 0) {
-        echo '+';
-    } else {
-        echo '.';
-    }
-}
-
-$key = new \phpseclib\Crypt\RSA();
-$key->loadKey(file_get_contents($settings->getPemPath()), \phpseclib\Crypt\RSA::PUBLIC_FORMAT_PKCS1);
-$retries = 5; // magic number
-$wait = 10; // magic number
-$result = null;
-while (!$result && $retries-- > 0) {
-    if (isset($result)) {
-        sleep($wait);
-    }
-    echo "Attempting connection to $address" . PHP_EOL;
-    // $ssh = new \phpseclib\Net\SSH2($address);
-    $ssh = new \phpseclib\Net\SSH2('ec2-54-188-92-76.us-west-2.compute.amazonaws.com');
-    $result = $ssh->login('ec2-user', $key);
-}
-$ansi = new \phpseclib\File\ANSI();
-$ssh->setTimeout(2);
-$ansi->appendString($ssh->read());
-$ssh->write("sudo su \n");
-$ansi->appendString($ssh->read());
-$ssh->write("yum install git -y \n");
-$ansi->appendString($ssh->read());
-$ssh->write("exit \n");
-$ansi->appendString($ssh->read());
-echo $ansi->getScreen();
-echo $ssh->exec('git clone ' . $settings->repo . ' phplambda');

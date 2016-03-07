@@ -1,6 +1,6 @@
 ; copy this file to 00_settings.ini and put in your unique values
 [unique]
-environments = 'oregon,credentials'
+environments = 'oregon,credentials,machine'
 
 ; example of the AWS credentials
 [credentials]
