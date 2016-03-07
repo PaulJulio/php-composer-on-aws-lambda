@@ -1,0 +1,17 @@
+; copy this file to 00_settings.ini and put in your unique values
+[unique]
+environments = 'oregon,credentials'
+
+; example of the AWS credentials
+[credentials]
+key = 'your key here'
+secret = 'your secret here'
+pemname = 'php-lambda'
+pempath = 'php-lambda.pem'
+; is the pem path relative to __DIR__/ ?
+pemrelative = 1
+machinetype = 'm3.large'
+timezone = 'America/Los_Angeles'
+repo = 'https://github.com/PaulJulio/php-composer-on-aws-lambda.git'
+; create the security group?
+createsecgrp = 1

@@ -2,8 +2,9 @@
     "name": "pauljulio/php-composer-on-aws-lambda",
     "description": "Run your Application on AWS Lambda",
     "require": {
-        "aws/aws-sdk-php": "^3.15",
-        "pauljulio/php-settings-ini": "1.*"
+        "aws/aws-sdk-php": "^3.15"
+        , "pauljulio/php-settings-ini": "1.*"
+        , "phpseclib/phpseclib": "2.*"
     },
     "require-dev": {
         "phpunit/phpunit": "^5.2"
