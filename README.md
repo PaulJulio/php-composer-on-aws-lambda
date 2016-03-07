@@ -32,8 +32,8 @@ I am specifically not embedding any compiled library in this repo because
 As of this writing, I have the following sketch of a process:
 
 - Add this package to your project via composer
-- Use the provided utilities to spin up an AWS VM that mirrors what you will run on in Lambda
-- From that machine, install this project via git
+- Use the provided utilities to spin up an AWS VM that mirrors what you will run on in Lambda DONE
+- From that machine, install this project via git DONE
 - On the AWS machine, use the provided utilities to compile PHP
 - Download the binary to your project
 - Use the provided utilities to package up your project for use on Lambda
@@ -41,4 +41,4 @@ As of this writing, I have the following sketch of a process:
 
 Nice to have:
 
-- Do all that remote stuff via locally executed utilities
+- Do all that remote stuff via locally executed utilities. (In progress, using a package to send commands to the remote machine)
