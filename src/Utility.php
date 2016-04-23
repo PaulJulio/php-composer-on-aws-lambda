@@ -67,6 +67,10 @@ class Utility {
         }
         return $result;
     }
+    
+    public function keyPairExists() {
+        return file_exists($this->so->getSettings()->getPemPath());
+    }
 
     /**
      * @param bool $suppressException
@@ -135,6 +139,18 @@ class Utility {
         return $ssh;
     }
 
+    public function terminateInstance($suppressException = true) {
+        $result = null;
+        $ec2 = $this->sdk->createEc2();
+        try {
+            $result = $ec2->terminateInstances(['InstanceIds' => [$this->so->getSettings()->instanceid]]);
+        } catch (Exception $e) {
+            if (!$suppressException) {
+                throw $e;
+            }
+        }
+        return $result;
+    }
     /**
      * @param bool $suppressException
      * @param bool $silent
@@ -157,11 +173,13 @@ class Utility {
             $address = $reservations[0]['Instances'][0]['PublicDnsName'];
             // record the address
             $fh = fopen('machine.ini', 'w');
-            fwrite($fh, '[machine]');
-            fwrite($fh, 'publicdns = ' . $address);
+            fwrite($fh, '[machine]' . PHP_EOL);
+            fwrite($fh, 'publicdns = ' . $address . PHP_EOL);
+            fwrite($fh, 'instanceid = ' . $instanceId . PHP_EOL);
             fclose($fh);
             // set the address in the settings as if it had been read from that ini file
             $this->so->getSettings()->setPublicDns($address);
+            $this->so->getSettings()->setInstanceId($instanceId);
             if (!$silent) {
                 echo "Watiing for the subnet to become available" . PHP_EOL;
             }
@@ -169,7 +187,7 @@ class Utility {
             if (!$silent) {
                 echo(sprintf('Waiting %s seconds for ssh to come online' . PHP_EOL, self::SSH_DELAY));
             }
-            for ($i = 0; $i < 40; $i++) {
+            for ($i = 0; $i < self::SSH_DELAY; $i++) {
                 sleep (1);
                 if (!$silent) {
                     if ($i > 0 && $i % 10 == 0) {
@@ -208,6 +226,37 @@ class Utility {
     }
 
     /**
+     * @return \Aws\Result|null
+     */
+    public function describeInstanceStatus() {
+        $iid = $this->so->getSettings()->instanceid;
+        if (!isset($iid)) {
+            return null;
+        }
+        $ec2 = $this->sdk->createEc2();
+        $result = $ec2->describeInstanceStatus(['InstanceIds' => [$iid]]);
+        return $result;
+    }
+    
+    public function isInstanceRunning() {
+        try {
+            $result = $this->describeInstanceStatus();
+        } catch (Exception $e) {
+            return false;
+        }
+        if (!isset($result)) {
+            return false;
+        }
+        if (count($result['InstanceStatuses']) < 1) {
+            return false;
+        }
+        if (in_array($result['InstanceStatuses'][0]['InstanceState']['Name'], ['running', 'pending'])) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * @param bool $silent
      * @throws Exception
      */
@@ -222,8 +271,9 @@ class Utility {
         $ansi->appendString($ssh->read());
         $ssh->write("exit \n");
         $ansi->appendString($ssh->read());
-        if (!$silent) {}
-        echo $ansi->getScreen();
+        if (!$silent) {
+            echo $ansi->getScreen();
+        }
     }
 
     /**

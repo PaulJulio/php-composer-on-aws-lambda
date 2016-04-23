@@ -16,12 +16,13 @@ namespace PaulJulio\PhpOnLambda;
  * @property string timezone
  * @property string repo
  * @property string publicdns
+ * @property string instanceid
  * @property bool pemrelative
  * @property bool createsecgrp
  *
  * @method static Settings Factory() Factory(\PaulJulio\SettingsIni\SettingsSO $so)
  */
-class Settings extends \PaulJulio\SettingsIni\Settings{
+class Settings extends \PaulJulio\SettingsIni\Settings {
 
     /**
      * @return string
@@ -60,5 +61,9 @@ class Settings extends \PaulJulio\SettingsIni\Settings{
 
     public function setPublicDns($address) {
         $this->publicdns = $address;
+    }
+    
+    public function setInstanceId($instanceid) {
+        $this->instanceid = $instanceid;
     }
 }

@@ -13,9 +13,9 @@ class UtilitySO {
     }
 
     /**
-     * @param \PaulJulio\SettingsIni\SettingsSO $settings
+     * @param Settings $settings
      */
-    public function setSettings(\PaulJulio\SettingsIni\SettingsSO $settings) {
+    public function setSettings(Settings $settings) {
         $this->settings = $settings;
     }
 
