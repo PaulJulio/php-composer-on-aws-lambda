@@ -7,7 +7,7 @@ yum install -y libexif-devel libjpeg-devel gd-devel curl-devel openssl-devel lib
 cd /tmp
 mkdir php
 wget http://php.net/get/php-5.6.20.tar.gz/from/a/mirror -O php-5.6.tar.gz
-tar zxvf php-5.6.*.tar.gz -C /tmp/php
+tar zxvf php-5.6.tar.gz -C /tmp/php
 
 cd php
 

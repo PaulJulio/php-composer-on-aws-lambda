@@ -13,3 +13,4 @@ print('Installing git on instance' . PHP_EOL);
 $utility->remoteInstallGit();
 print('Cloning repo on instance' . PHP_EOL);
 $utility->remoteCloneRepo();
+print('Compiling php on remote machine' . PHP_EOL);
