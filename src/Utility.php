@@ -295,7 +295,7 @@ class Utility {
         $ansi->appendString($ssh->read());
         $ssh->write("sudo su \n");
         $ansi->appendString($ssh->read());
-        $ssh->write("sh ./phponlamda/src/remote_compile.sh \n");
+        $ssh->write("sh ./phponlambda/src/remote_compile.sh \n");
         $ansi->appendString($ssh->read());
         $ssh->write("exit \n");
         $ansi->appendString($ssh->read());
