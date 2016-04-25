@@ -302,6 +302,27 @@ class Utility {
         if (!$silent) {
             echo $ansi->getScreen();
         }
-        
+    }
+
+    /**
+     * Downloads the compiled files.
+     * Note that this downloads the files to the current directory, I had issues getting it to work
+     * with __DIR__ in cygwin
+     */
+    public function fetchCompiled() {
+        $cmd = strtr('scp -i {pempath} ec2-user@{address}:/tmp/php/compiled/bin/{file} ./', [
+            '{address}' => $this->so->getSettings()->publicdns,
+            '{pempath}' => realpath($this->so->getSettings()->getPemPath()),
+            '{file}' => 'phar.phar',
+        ]);
+        print($cmd . PHP_EOL);
+        passthru($cmd);
+        $cmd = strtr('scp -i {pempath} ec2-user@{address}:/tmp/php/compiled/bin/{file} ./', [
+            '{address}' => $this->so->getSettings()->publicdns,
+            '{pempath}' => realpath($this->so->getSettings()->getPemPath()),
+            '{file}' => 'php',
+        ]);
+        print($cmd . PHP_EOL);
+        passthru($cmd);
     }
 }

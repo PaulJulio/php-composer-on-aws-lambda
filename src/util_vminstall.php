@@ -13,5 +13,9 @@ print('Installing git on instance' . PHP_EOL);
 $utility->remoteInstallGit();
 print('Cloning repo on instance' . PHP_EOL);
 $utility->remoteCloneRepo();
+/* todo: see if this can be done remotely
 print('Compiling php on remote machine' . PHP_EOL);
 $utility->remoteCompilePhp();
+*/
+print('Use the util_vmssh.php script to remote into the vm and compile PHP with command:' . PHP_EOL);
+print('sudo sh ./phponlambda/src/remote_compile.sh' . PHP_EOL);

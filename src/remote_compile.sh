@@ -2,7 +2,7 @@
 
 PWD=pwd
 
-yum install -y libexif-devel libjpeg-devel gd-devel curl-devel openssl-devel libxml2-devel
+yum install -y libexif-devel libjpeg-devel gd-devel curl-devel openssl-devel libxml2-devel gcc
 
 cd /tmp
 mkdir php
