@@ -287,4 +287,21 @@ class Utility {
             echo $output;
         }
     }
+    
+    public function remoteCompilePhp($silent = false) {
+        $ansi = new \phpseclib\File\ANSI();
+        $ssh = $this->getSSH($this->so->getSettings()->publicdns);
+        $ssh->setTimeout(self::SSH_READ_TIMEOUT);
+        $ansi->appendString($ssh->read());
+        $ssh->write("sudo su \n");
+        $ansi->appendString($ssh->read());
+        $ssh->write("sh ./phponlamda/src/remote_compile.sh \n");
+        $ansi->appendString($ssh->read());
+        $ssh->write("exit \n");
+        $ansi->appendString($ssh->read());
+        if (!$silent) {
+            echo $ansi->getScreen();
+        }
+        
+    }
 }
