@@ -1,8 +1,8 @@
 #!/usr/bin/php
 <?php
-if (file_exists(implode(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', 'vendor', 'autoload']))) {
+if (file_exists(implode(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', '..', '..', 'vendor', 'autoload']))) {
     // more common scenario where this is a dependency of another project
-    require_once(realpath(implode(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', 'vendor', 'autoload.php'])));
+    require_once(realpath(implode(DIRECTORY_SEPARATOR, [__DIR__, '..', '..', '..', '..', 'vendor', 'autoload.php'])));
 } else {
     // less common scenario where this is the main project
     require_once(realpath(implode(DIRECTORY_SEPARATOR, [__DIR__, '..', 'vendor', 'autoload.php'])));
