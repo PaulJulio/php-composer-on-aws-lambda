@@ -1,6 +1,6 @@
 #!/usr/bin/php
 <?php
-require_once(realpath(implode(DIRECTORY_SEPARATOR, [__DIR__, '..', 'vendor', 'autoload.php'])));
+require_once(realpath(implode(DIRECTORY_SEPARATOR,[__DIR__, 'util_common.php'])));
 
 $sso = new \PaulJulio\SettingsIni\SettingsSO();
 $sso->addIniFileNamesFromPath(__DIR__);
