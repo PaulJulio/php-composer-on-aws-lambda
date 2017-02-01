@@ -39,6 +39,9 @@ As of this writing, I have the following sketch of a process:
 - Use the provided utilities to package up your project for use on Lambda
 - Submit your project to Lambda
 
+Update:
+- Amazon has published an official post on how to get PHP up and running on Lambda: [Scripting Languages for AWS Lambda](https://aws.amazon.com/blogs/compute/scripting-languages-for-aws-lambda-running-php-ruby-and-go/)
+
 Nice to have:
 
 - Do all that remote stuff via locally executed utilities. (In progress, using a package to send commands to the remote machine)
